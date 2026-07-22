@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Role {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique // ADMIN, STORE_MANAGER, INVENTORY_MANAGER, SALESPERSON, SUPPLIER
+  permissions String?
+  users       User[]
+  createdAt   DateTime @default(now())
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  username  String   @unique
+  password  String
+  email     String?  @unique
+  fullName  String
+  phone     String?
+  roleId    String   @db.ObjectId
+  role      Role     @relation(fields: [roleId], references: [id])
+  
+  // Relations
+  assignments      UserLocation[]
+  managedLocations Location[]     @relation("LocationManager")
+  transactions     Transaction[]
+  requestsCreated  InventoryRequest[]
+  purchaseOrders   PurchaseOrder[]
+  
+  createdAt DateTime @default(now())
+}
+
+enum LocationType {
+  WAREHOUSE
+  STORE
+}
+
+model Location {
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  type      LocationType
+  address   String?
+  capacity  Int?
+  managerId String?      @db.ObjectId
+  manager   User?        @relation("LocationManager", fields: [managerId], references: [id])
+  
+  // Relations
+  staffAssignments UserLocation[]
+  inventory        Inventory[]
+  transactions     Transaction[]
+  
+  requestsAsSource InventoryRequest[] @relation("RequestSource")
+  requestsAsDest   InventoryRequest[] @relation("RequestDest")
+  
+  purchaseOrders   PurchaseOrder[]
+  
+  createdAt DateTime @default(now())
+}
+
+model UserLocation {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  locationId String   @db.ObjectId
+  startDate  DateTime @default(now())
+  endDate    DateTime?
+  
+  user     User     @relation(fields: [userId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+  
+  @@unique([userId, locationId])
+}
+
+model Supplier {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  contactInfo String?
+  orders      PurchaseOrder[]
+  products    SupplierProduct[]
+  createdAt   DateTime          @default(now())
+}
+
+model Product {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  code        String   @unique
+  name        String
+  description String?
+  category    String?
+  unit        String
+  
+  // Relations
+  inventory        Inventory[]
+  transactionItems TransactionItem[]
+  requestItems     RequestItem[]
+  purchaseItems    PurchaseOrderItem[]
+  supplierProducts SupplierProduct[]
+  
+  createdAt DateTime @default(now())
+}
+
+// Supplier Pricing/Availability
+model SupplierProduct {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  supplierId String   @db.ObjectId
+  productId  String   @db.ObjectId
+  price      Float
+  isAvailable Boolean @default(true)
+  
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+  
+  @@unique([supplierId, productId])
+}
+
+model Inventory {
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  locationId       String    @db.ObjectId
+  productId        String    @db.ObjectId
+  quantity         Int       @default(0)
+  costPrice        Float     @default(0)
+  sellingPrice     Float     @default(0)
+  expirationDate   DateTime?
+  dynamicThreshold Int?      // Ngưỡng cảnh báo tự động
+  
+  location Location @relation(fields: [locationId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+  
+  @@unique([locationId, productId, expirationDate]) // Track expiration per location/product
+}
+
+enum TransactionType {
+  IMPORT
+  EXPORT
+  SALE
+  RETURN
+  DAMAGE
+}
+
+model Transaction {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  locationId  String          @db.ObjectId
+  type        TransactionType
+  createdById String          @db.ObjectId
+  totalValue  Float           @default(0)
+  notes       String?
+  
+  location  Location          @relation(fields: [locationId], references: [id])
+  createdBy User              @relation(fields: [createdById], references: [id])
+  items     TransactionItem[]
+  
+  createdAt DateTime @default(now())
+}
+
+model TransactionItem {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  transactionId String  @db.ObjectId
+  productId     String  @db.ObjectId
+  quantity      Int
+  price         Float
+  
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  product     Product     @relation(fields: [productId], references: [id])
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model InventoryRequest {
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  sourceLocationId String?       @db.ObjectId
+  destLocationId   String        @db.ObjectId
+  status           RequestStatus @default(PENDING)
+  createdById      String        @db.ObjectId
+  notes            String?
+  
+  sourceLocation Location?     @relation("RequestSource", fields: [sourceLocationId], references: [id])
+  destLocation   Location      @relation("RequestDest", fields: [destLocationId], references: [id])
+  createdBy      User          @relation(fields: [createdById], references: [id])
+  items          RequestItem[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RequestItem {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  requestId String @db.ObjectId
+  productId String @db.ObjectId
+  quantity  Int
+  
+  request InventoryRequest @relation(fields: [requestId], references: [id])
+  product Product          @relation(fields: [productId], references: [id])
+}
+
+enum POStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  CONFIRMED
+  REJECTED
+  DELIVERED
+}
+
+model PurchaseOrder {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  supplierId  String   @db.ObjectId
+  warehouseId String   @db.ObjectId
+  status      POStatus @default(DRAFT)
+  createdById String   @db.ObjectId
+  totalValue  Float    @default(0)
+  
+  supplier  Supplier            @relation(fields: [supplierId], references: [id])
+  warehouse Location            @relation(fields: [warehouseId], references: [id])
+  createdBy User                @relation(fields: [createdById], references: [id])
+  items     PurchaseOrderItem[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PurchaseOrderItem {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  poId      String @db.ObjectId
+  productId String @db.ObjectId
+  quantity  Int
+  price     Float
+  
+  po      PurchaseOrder @relation(fields: [poId], references: [id])
+  product Product       @relation(fields: [productId], references: [id])
+}
