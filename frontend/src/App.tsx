@@ -2,6 +2,9 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import MainLayout from './components/layout/MainLayout';
 import Login from './pages/auth/Login';
 
+import CreateRequest from './pages/requests/CreateRequest';
+import ManageRequests from './pages/requests/ManageRequests';
+
 // Placeholder for Dashboard
 const DashboardPlaceholder = () => (
   <div className="bg-white rounded-lg shadow p-6">
@@ -23,8 +26,8 @@ function App() {
         {/* Placeholder for future role-based routes */}
         <Route path="admin/*" element={<div>Admin Module</div>} />
         <Route path="pos/*" element={<div>POS Module</div>} />
-        <Route path="inventory/*" element={<div>Inventory Module</div>} />
-        <Route path="store/*" element={<div>Store Module</div>} />
+        <Route path="inventory/*" element={<ManageRequests />} />
+        <Route path="store/*" element={<CreateRequest />} />
         <Route path="supplier/*" element={<div>Supplier Module</div>} />
       </Route>
 

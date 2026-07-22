@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// Import routes (sẽ thêm sau)
+// Import routes
+import requestRoutes from './modules/request_management/request.routes.js';
 // import adminRoutes from './modules/admin/routes';
 // import posRoutes from './modules/salesperson_pos/routes';
 
@@ -21,6 +22,7 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
+app.use('/api/requests', requestRoutes);
 // app.use('/api/admin', adminRoutes);
 // app.use('/api/pos', posRoutes);
 
