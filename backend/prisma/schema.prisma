@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlserver"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model Role {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   name        String   @unique // ADMIN, STORE_MANAGER, INVENTORY_MANAGER, SALESPERSON, SUPPLIER
   permissions String?
   users       User[]
@@ -16,13 +16,13 @@ model Role {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
   username  String   @unique
   password  String
   email     String?  @unique
   fullName  String
   phone     String?
-  roleId    Int
+  roleId    String   @db.ObjectId
   role      Role     @relation(fields: [roleId], references: [id])
   
   // Relations
@@ -41,12 +41,12 @@ enum LocationType {
 }
 
 model Location {
-  id        Int          @id @default(autoincrement())
+  id        String       @id @default(auto()) @map("_id") @db.ObjectId
   name      String
   type      LocationType
   address   String?
   capacity  Int?
-  managerId Int?
+  managerId String?      @db.ObjectId
   manager   User?        @relation("LocationManager", fields: [managerId], references: [id])
   
   // Relations
@@ -63,9 +63,9 @@ model Location {
 }
 
 model UserLocation {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  locationId Int
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  locationId String   @db.ObjectId
   startDate  DateTime @default(now())
   endDate    DateTime?
   
@@ -76,16 +76,16 @@ model UserLocation {
 }
 
 model Supplier {
-  id          Int             @id @default(autoincrement())
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
   name        String
   contactInfo String?
   orders      PurchaseOrder[]
   products    SupplierProduct[]
-  createdAt   DateTime        @default(now())
+  createdAt   DateTime          @default(now())
 }
 
 model Product {
-  id          Int      @id @default(autoincrement())
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
   code        String   @unique
   name        String
   description String?
@@ -104,9 +104,9 @@ model Product {
 
 // Supplier Pricing/Availability
 model SupplierProduct {
-  id         Int      @id @default(autoincrement())
-  supplierId Int
-  productId  Int
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  supplierId String   @db.ObjectId
+  productId  String   @db.ObjectId
   price      Float
   isAvailable Boolean @default(true)
   
@@ -117,9 +117,9 @@ model SupplierProduct {
 }
 
 model Inventory {
-  id               Int       @id @default(autoincrement())
-  locationId       Int
-  productId        Int
+  id               String    @id @default(auto()) @map("_id") @db.ObjectId
+  locationId       String    @db.ObjectId
+  productId        String    @db.ObjectId
   quantity         Int       @default(0)
   costPrice        Float     @default(0)
   sellingPrice     Float     @default(0)
@@ -141,12 +141,12 @@ enum TransactionType {
 }
 
 model Transaction {
-  id         Int             @id @default(autoincrement())
-  locationId Int
-  type       TransactionType
-  createdById Int
-  totalValue Float           @default(0)
-  notes      String?
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+  locationId  String          @db.ObjectId
+  type        TransactionType
+  createdById String          @db.ObjectId
+  totalValue  Float           @default(0)
+  notes       String?
   
   location  Location          @relation(fields: [locationId], references: [id])
   createdBy User              @relation(fields: [createdById], references: [id])
@@ -156,9 +156,9 @@ model Transaction {
 }
 
 model TransactionItem {
-  id            Int         @id @default(autoincrement())
-  transactionId Int
-  productId     Int
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  transactionId String  @db.ObjectId
+  productId     String  @db.ObjectId
   quantity      Int
   price         Float
   
@@ -173,11 +173,11 @@ enum RequestStatus {
 }
 
 model InventoryRequest {
-  id               Int           @id @default(autoincrement())
-  sourceLocationId Int?          
-  destLocationId   Int           
+  id               String        @id @default(auto()) @map("_id") @db.ObjectId
+  sourceLocationId String?       @db.ObjectId
+  destLocationId   String        @db.ObjectId
   status           RequestStatus @default(PENDING)
-  createdById      Int
+  createdById      String        @db.ObjectId
   notes            String?
   
   sourceLocation Location?     @relation("RequestSource", fields: [sourceLocationId], references: [id])
@@ -190,9 +190,9 @@ model InventoryRequest {
 }
 
 model RequestItem {
-  id        Int     @id @default(autoincrement())
-  requestId Int
-  productId Int
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  requestId String @db.ObjectId
+  productId String @db.ObjectId
   quantity  Int
   
   request InventoryRequest @relation(fields: [requestId], references: [id])
@@ -209,11 +209,11 @@ enum POStatus {
 }
 
 model PurchaseOrder {
-  id          Int      @id @default(autoincrement())
-  supplierId  Int
-  warehouseId Int
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  supplierId  String   @db.ObjectId
+  warehouseId String   @db.ObjectId
   status      POStatus @default(DRAFT)
-  createdById Int
+  createdById String   @db.ObjectId
   totalValue  Float    @default(0)
   
   supplier  Supplier            @relation(fields: [supplierId], references: [id])
@@ -226,9 +226,9 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id        Int   @id @default(autoincrement())
-  poId      Int
-  productId Int
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  poId      String @db.ObjectId
+  productId String @db.ObjectId
   quantity  Int
   price     Float
   
