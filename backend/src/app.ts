@@ -2,9 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
-// Import routes (sẽ thêm sau)
-// import adminRoutes from './modules/admin/routes';
-// import posRoutes from './modules/salesperson_pos/routes';
+import authRouter from './routes/auth.js';
+import requestsRouter from './routes/requests.js';
+import productsRouter from './routes/products.js';
 
 dotenv.config();
 
@@ -21,8 +21,9 @@ app.get('/health', (req, res) => {
 });
 
 // Routes
-// app.use('/api/admin', adminRoutes);
-// app.use('/api/pos', posRoutes);
+app.use('/api/auth', authRouter);
+app.use('/api/requests', requestsRouter);
+app.use('/api', productsRouter);
 
 const PORT = process.env.PORT || 5000;
 

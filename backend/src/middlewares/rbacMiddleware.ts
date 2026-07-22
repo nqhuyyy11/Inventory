@@ -1,6 +1,6 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from './authMiddleware';
-import prisma from '../config/prisma';
+import type { Response, NextFunction } from 'express';
+import type { AuthRequest } from './authMiddleware.js';
+import prisma from '../config/prisma.js';
 
 export const requireRole = (allowedRoleNames: string[]) => {
   return async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {

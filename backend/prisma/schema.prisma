@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "sqlserver"
-  url      = env("DATABASE_URL")
 }
 
 model Role {
@@ -35,15 +34,10 @@ model User {
   createdAt DateTime @default(now())
 }
 
-enum LocationType {
-  WAREHOUSE
-  STORE
-}
-
 model Location {
   id        Int          @id @default(autoincrement())
   name      String
-  type      LocationType
+  type      String
   address   String?
   capacity  Int?
   managerId Int?
@@ -69,8 +63,8 @@ model UserLocation {
   startDate  DateTime @default(now())
   endDate    DateTime?
   
-  user     User     @relation(fields: [userId], references: [id])
-  location Location @relation(fields: [locationId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  location Location @relation(fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   
   @@unique([userId, locationId])
 }
@@ -132,24 +126,16 @@ model Inventory {
   @@unique([locationId, productId, expirationDate]) // Track expiration per location/product
 }
 
-enum TransactionType {
-  IMPORT
-  EXPORT
-  SALE
-  RETURN
-  DAMAGE
-}
-
 model Transaction {
   id         Int             @id @default(autoincrement())
   locationId Int
-  type       TransactionType
+  type       String
   createdById Int
   totalValue Float           @default(0)
   notes      String?
   
-  location  Location          @relation(fields: [locationId], references: [id])
-  createdBy User              @relation(fields: [createdById], references: [id])
+  location  Location          @relation(fields: [locationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy User              @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   items     TransactionItem[]
   
   createdAt DateTime @default(now())
@@ -166,23 +152,17 @@ model TransactionItem {
   product     Product     @relation(fields: [productId], references: [id])
 }
 
-enum RequestStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 model InventoryRequest {
   id               Int           @id @default(autoincrement())
   sourceLocationId Int?          
   destLocationId   Int           
-  status           RequestStatus @default(PENDING)
+  status           String        @default("PENDING")
   createdById      Int
   notes            String?
   
-  sourceLocation Location?     @relation("RequestSource", fields: [sourceLocationId], references: [id])
-  destLocation   Location      @relation("RequestDest", fields: [destLocationId], references: [id])
-  createdBy      User          @relation(fields: [createdById], references: [id])
+  sourceLocation Location?     @relation("RequestSource", fields: [sourceLocationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  destLocation   Location      @relation("RequestDest", fields: [destLocationId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy      User          @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   items          RequestItem[]
   
   createdAt DateTime @default(now())
@@ -199,26 +179,17 @@ model RequestItem {
   product Product          @relation(fields: [productId], references: [id])
 }
 
-enum POStatus {
-  DRAFT
-  PENDING_APPROVAL
-  APPROVED
-  CONFIRMED
-  REJECTED
-  DELIVERED
-}
-
 model PurchaseOrder {
   id          Int      @id @default(autoincrement())
   supplierId  Int
   warehouseId Int
-  status      POStatus @default(DRAFT)
+  status      String   @default("DRAFT")
   createdById Int
   totalValue  Float    @default(0)
   
-  supplier  Supplier            @relation(fields: [supplierId], references: [id])
-  warehouse Location            @relation(fields: [warehouseId], references: [id])
-  createdBy User                @relation(fields: [createdById], references: [id])
+  supplier  Supplier            @relation(fields: [supplierId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  warehouse Location            @relation(fields: [warehouseId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  createdBy User                @relation(fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   items     PurchaseOrderItem[]
   
   createdAt DateTime @default(now())
