@@ -115,6 +115,32 @@ export default function ManageRequests() {
     }
   };
 
+  const handleReject = async (id: number) => {
+    const reason = window.prompt('Nhập lý do từ chối xuất kho (không bắt buộc):');
+    if (reason === null) return;
+
+    setProcessingId(id);
+    setErrorDialog(null);
+    setSuccessMsg(null);
+
+    try {
+      await inventoryService.rejectRequest(id, Number(user?.id) || 3, reason);
+      setSuccessMsg(`Đã từ chối yêu cầu xuất kho #${id}.`);
+      if (selectedRequest?.id === id) {
+        setSelectedRequest(null);
+      }
+      fetchRequests();
+    } catch (err: any) {
+      console.error('Error rejecting request:', err);
+      setErrorDialog({
+        title: 'Lỗi từ chối yêu cầu',
+        messages: [err.response?.data?.message || 'Có lỗi xảy ra khi từ chối yêu cầu.'],
+      });
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-10 text-slate-500 font-medium">Đang tải danh sách yêu cầu...</div>;
   }
@@ -409,13 +435,22 @@ export default function ManageRequests() {
                   Đóng
                 </button>
                 {selectedRequest.status === 'PENDING' && (
-                  <button
-                    onClick={() => handleProcess(selectedRequest.id)}
-                    disabled={processingId !== null}
-                    className="px-6 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow disabled:opacity-50 flex items-center gap-1"
-                  >
-                    {processingId === selectedRequest.id ? 'Đang thực hiện xuất kho...' : '✓ Xử Lý & Xuất Kho Ngay'}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleReject(selectedRequest.id)}
+                      disabled={processingId !== null}
+                      className="px-5 py-2 text-xs bg-red-50 text-red-700 border border-red-200 rounded-lg hover:bg-red-100 font-bold transition disabled:opacity-50"
+                    >
+                      ✕ Từ Chối Xuất Kho
+                    </button>
+                    <button
+                      onClick={() => handleProcess(selectedRequest.id)}
+                      disabled={processingId !== null}
+                      className="px-6 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {processingId === selectedRequest.id ? 'Đang thực hiện xuất kho...' : '✓ Xử Lý & Xuất Kho Ngay'}
+                    </button>
+                  </>
                 )}
               </div>
             </div>

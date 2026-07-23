@@ -71,7 +71,8 @@ interface MockRequest {
 
 // Initial mock data setup
 const initMockData = () => {
-  if (!localStorage.getItem('mock_products')) {
+  const existingProducts = localStorage.getItem('mock_products');
+  if (!existingProducts || JSON.parse(existingProducts).length < 50) {
     const products: MockProduct[] = [
       { id: 1, code: 'PRD-001', name: 'Sữa tươi Vinamilk 1L', category: 'Dairy', unit: 'Hộp' },
       { id: 2, code: 'PRD-002', name: 'Mì Hảo Hảo tôm chua cay', category: 'Noodles', unit: 'Gói' },
@@ -490,6 +491,23 @@ export const inventoryService = {
       return { data: { message: 'Dispatch request processed (Mock Mode)', request } };
     }
 
-    return apiClient.post(`/requests/${requestId}/process`, { userId });
+    return apiClient.post(`/requests/${requestId}/process`, { userId, action: 'APPROVE' });
+  },
+
+  rejectRequest: async (requestId: number, userId: number, reason?: string) => {
+    if (isMockMode()) {
+      const reqs = getFromStorage<MockRequest[]>('mock_requests');
+      const reqIndex = reqs.findIndex((r) => r.id === requestId);
+      if (reqIndex !== -1) {
+        reqs[reqIndex]!.status = 'REJECTED';
+        reqs[reqIndex]!.updatedAt = new Date().toISOString();
+        if (reason) {
+          reqs[reqIndex]!.notes = `[LÝ DO TỪ CHỐI]: ${reason} ${reqs[reqIndex]!.notes ? `| Ghi chú cũ: ${reqs[reqIndex]!.notes}` : ''}`;
+        }
+        saveToStorage('mock_requests', reqs);
+        return { data: { message: 'Dispatch request rejected (Mock Mode)', request: reqs[reqIndex] } };
+      }
+    }
+    return apiClient.post(`/requests/${requestId}/process`, { userId, action: 'REJECT', reason });
   },
 };
