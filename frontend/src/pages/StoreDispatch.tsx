@@ -124,9 +124,15 @@ export default function StoreDispatch() {
       setRows([{ productId: products[0]?.id || 1, quantity: 10 }]);
     } catch (err: any) {
       console.error(err);
+      const errData = err.response?.data;
+      const mainMsg = errData?.message || 'Thiếu hàng trong kho xuất';
+      const validationDetails = Array.isArray(errData?.validationErrors) && errData.validationErrors.length > 0
+        ? `: ${errData.validationErrors.join(' | ')}`
+        : '';
+      
       setMessage({
         type: 'error',
-        text: err.response?.data?.message || 'System error occurred',
+        text: `${mainMsg}${validationDetails}`,
       });
     } finally {
       setSubmitting(false);

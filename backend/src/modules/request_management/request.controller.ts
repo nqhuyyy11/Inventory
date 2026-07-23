@@ -21,14 +21,14 @@ export const createDispatchRequest = async (req: AuthRequest, res: Response): Pr
     // Tạo InventoryRequest với trạng thái mặc định là PENDING
     const request = await prisma.inventoryRequest.create({
       data: {
-        destLocationId,
-        createdById: userId,
-        notes,
+        destLocationId: Number(destLocationId),
+        createdById: Number(userId),
+        notes: notes || '',
         status: "PENDING",
         items: {
-          create: items.map((item: { productId: string; quantity: number }) => ({
-            productId: item.productId,
-            quantity: item.quantity,
+          create: items.map((item: { productId: number; quantity: number }) => ({
+            productId: Number(item.productId),
+            quantity: Number(item.quantity),
           })),
         },
       },
@@ -62,7 +62,7 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
     }
 
     const inventoryRequest = await prisma.inventoryRequest.findUnique({
-      where: { id: String(id) },
+      where: { id: Number(id) },
       include: { items: true },
     });
 
@@ -78,8 +78,8 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
 
     if (action === "REJECT") {
       const updatedReq = await prisma.inventoryRequest.update({
-        where: { id: String(id) },
-        data: { status: "REJECTED", sourceLocationId: String(sourceLocationId) },
+        where: { id: Number(id) },
+        data: { status: "REJECTED", sourceLocationId: Number(sourceLocationId) },
       });
       res.json({ message: "Đã từ chối yêu cầu", data: updatedReq });
       return;
@@ -96,8 +96,8 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
         for (const reqItem of requestItems) {
           const inventory = await tx.inventory.findFirst({
             where: {
-              locationId: String(sourceLocationId),
-              productId: reqItem.productId,
+              locationId: Number(sourceLocationId),
+              productId: Number(reqItem.productId),
             },
           });
 
@@ -119,17 +119,19 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
         for (const reqItem of requestItems) {
           // Trừ Kho Xuất
           const sourceInv = await tx.inventory.findFirst({
-            where: { locationId: String(sourceLocationId), productId: reqItem.productId },
+            where: { locationId: Number(sourceLocationId), productId: Number(reqItem.productId) },
           });
           
-          await tx.inventory.update({
-            where: { id: sourceInv!.id },
-            data: { quantity: { decrement: reqItem.quantity } },
-          });
+          if (sourceInv) {
+            await tx.inventory.update({
+              where: { id: sourceInv.id },
+              data: { quantity: { decrement: reqItem.quantity } },
+            });
+          }
 
           // Cộng Kho/Cửa hàng Nhận
           const destInv = await tx.inventory.findFirst({
-            where: { locationId: inventoryRequest.destLocationId, productId: reqItem.productId },
+            where: { locationId: inventoryRequest.destLocationId, productId: Number(reqItem.productId) },
           });
 
           if (destInv) {
@@ -141,7 +143,7 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
             await tx.inventory.create({
               data: {
                 locationId: inventoryRequest.destLocationId,
-                productId: reqItem.productId,
+                productId: Number(reqItem.productId),
                 quantity: reqItem.quantity,
               },
             });
@@ -149,17 +151,17 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
         }
 
         // Lưu Transaction (EXPORT từ Kho Xuất)
-        const exportTx = await tx.transaction.create({
+        await tx.transaction.create({
           data: {
-            locationId: String(sourceLocationId),
+            locationId: Number(sourceLocationId),
             type: "EXPORT",
-            createdById: userId,
+            createdById: Number(userId),
             notes: `Xuất kho cho yêu cầu ${id}`,
             items: {
               create: requestItems.map((item: any) => ({
-                productId: item.productId,
-                quantity: item.quantity,
-                price: 0, // Điều chuyển nội bộ tạm thời giá = 0
+                productId: Number(item.productId),
+                quantity: Number(item.quantity),
+                price: 0,
               }))
             }
           }
@@ -167,8 +169,8 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
 
         // Cập nhật trạng thái Request
         const updatedReq = await tx.inventoryRequest.update({
-          where: { id: String(id) },
-          data: { status: "APPROVED", sourceLocationId: String(sourceLocationId) },
+          where: { id: Number(id) },
+          data: { status: "APPROVED", sourceLocationId: Number(sourceLocationId) },
         });
 
         return updatedReq;
@@ -179,12 +181,12 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
     } catch (err: any) {
       if (err.name === "OutOfStockError") {
         res.status(400).json({
-          message: "Hàng trong kho không đủ để xuất",
+          message: "Thiếu hàng trong kho xuất",
           details: err.outOfStockItems,
         });
         return;
       }
-      throw err; // Bắn ra ngoài catch chung
+      throw err;
     }
 
   } catch (error) {
@@ -197,7 +199,7 @@ export const processDispatchRequest = async (req: AuthRequest, res: Response): P
 export const getRequests = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const status = typeof req.query.status === 'string' ? req.query.status : undefined;
-    const destLocationId = typeof req.query.destLocationId === 'string' ? req.query.destLocationId : undefined;
+    const destLocationId = typeof req.query.destLocationId === 'string' ? Number(req.query.destLocationId) : undefined;
     
     const filter: any = {};
     if (status) filter.status = status;

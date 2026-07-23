@@ -11,27 +11,27 @@ export class InventoryRequestController {
     const errors: string[] = [];
 
     if (!details) {
-      errors.push('Request details are missing');
+      errors.push('Thông tin yêu cầu không được để trống');
       return { isValid: false, errors };
     }
 
     if (!details.destLocationId) {
-      errors.push('Destination location ID is required');
+      errors.push('Chưa chọn Cửa hàng nhận');
     }
 
     if (!details.createdById) {
-      errors.push('Creator user ID is required');
+      errors.push('Thiếu thông tin người tạo yêu cầu');
     }
 
     if (!details.items || !Array.isArray(details.items) || details.items.length === 0) {
-      errors.push('At least one item must be included in the request');
+      errors.push('Vui lòng chọn ít nhất một sản phẩm');
     } else {
       details.items.forEach((item: any, idx: number) => {
         if (!item.productId) {
-          errors.push(`Item #${idx + 1}: Product ID is required`);
+          errors.push(`Dòng #${idx + 1}: Chưa chọn sản phẩm`);
         }
         if (!item.quantity || Number(item.quantity) <= 0) {
-          errors.push(`Item #${idx + 1}: Quantity must be greater than 0`);
+          errors.push(`Dòng #${idx + 1}: Số lượng yêu cầu phải lớn hơn 0`);
         }
       });
     }
@@ -46,7 +46,7 @@ export class InventoryRequestController {
    * Sequence Diagram Function: createRequest(details)
    * Handles creation of an Inventory Request:
    * 1. 1.1.1: validateRequest(details)
-   * 2. 2: checkStockAvailability(productIds)
+   * 2. 2: checkStockAvailability(productIds) -> checks stock sufficiency
    * 3. 2.1.1: create(productIds, quantities)
    */
   static async createRequest(req: Request, res: Response): Promise<void> {
@@ -57,7 +57,7 @@ export class InventoryRequestController {
     if (!validation.isValid) {
       // 1.1.1.1: validationErrors
       res.status(400).json({
-        message: 'Validation failed',
+        message: 'Dữ liệu không hợp lệ',
         validationErrors: validation.errors,
       });
       return;
@@ -67,10 +67,28 @@ export class InventoryRequestController {
       // 2: checkStockAvailability(productIds) if source location is specified
       if (details.sourceLocationId) {
         const productIds = details.items.map((i: any) => Number(i.productId));
-        await InventoryEntity.checkStockAvailability(
+        const stockLevels = await InventoryEntity.checkStockAvailability(
           Number(details.sourceLocationId),
           productIds
         );
+
+        const outOfStockErrors: string[] = [];
+        for (const item of details.items) {
+          const available = stockLevels[Number(item.productId)] || 0;
+          if (available < Number(item.quantity)) {
+            outOfStockErrors.push(
+              `Sản phẩm ID #${item.productId} không đủ hàng (Yêu cầu: ${item.quantity}, Hiện có: ${available})`
+            );
+          }
+        }
+
+        if (outOfStockErrors.length > 0) {
+          res.status(400).json({
+            message: 'Thiếu hàng trong kho xuất',
+            validationErrors: outOfStockErrors,
+          });
+          return;
+        }
       }
 
       // 2.1.1: create(productIds, quantities)
@@ -92,8 +110,8 @@ export class InventoryRequestController {
       console.error('Create Request Error:', error);
       // 3.1: system error message
       res.status(500).json({
-        message: 'System error occurred',
-        error: error.message || 'System error occurred',
+        message: 'Thiếu hàng trong kho xuất',
+        error: error.message || 'Thiếu hàng trong kho xuất',
       });
     }
   }

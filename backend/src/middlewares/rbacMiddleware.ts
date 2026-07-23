@@ -11,7 +11,7 @@ export const requireRole = (allowedRoleNames: string[]) => {
 
     try {
       const role = await prisma.role.findUnique({
-        where: { id: req.user.roleId },
+        where: { id: Number(req.user.roleId) },
       });
 
       if (!role) {

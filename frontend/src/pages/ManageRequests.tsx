@@ -106,7 +106,7 @@ export default function ManageRequests() {
       } else {
         setErrorDialog({
           title: 'Lỗi xử lý yêu cầu',
-          messages: [errorData?.message || 'System error occurred'],
+          messages: [' Cảnh báo thiếu hàng'],
         });
       }
     } finally {
@@ -198,13 +198,12 @@ export default function ManageRequests() {
                     </td>
                     <td className="p-4 text-center">
                       <span
-                        className={`inline-block px-2.5 py-1 text-xs font-bold rounded-full ${
-                          req.status === 'PENDING'
-                            ? 'bg-amber-100 text-amber-800'
-                            : req.status === 'APPROVED'
+                        className={`inline-block px-2.5 py-1 text-xs font-bold rounded-full ${req.status === 'PENDING'
+                          ? 'bg-amber-100 text-amber-800'
+                          : req.status === 'APPROVED'
                             ? 'bg-emerald-100 text-emerald-800'
                             : 'bg-red-100 text-red-800'
-                        }`}
+                          }`}
                       >
                         {req.status === 'PENDING' ? 'Chờ Duyệt' : req.status === 'APPROVED' ? 'Đã Xuất Kho' : 'Đã Từ Chối'}
                       </span>
@@ -248,13 +247,12 @@ export default function ManageRequests() {
                     BẢNG CHI TIẾT ĐƠN YÊU CẦU #REQ-{String(selectedRequest.id).padStart(4, '0')}
                   </h3>
                   <span
-                    className={`px-4 py-1 text-xs font-black rounded-full uppercase tracking-wider ${
-                      selectedRequest.status === 'PENDING'
-                        ? 'bg-amber-400 text-amber-950'
-                        : selectedRequest.status === 'APPROVED'
+                    className={`px-4 py-1 text-xs font-black rounded-full uppercase tracking-wider ${selectedRequest.status === 'PENDING'
+                      ? 'bg-amber-400 text-amber-950'
+                      : selectedRequest.status === 'APPROVED'
                         ? 'bg-emerald-400 text-emerald-950'
                         : 'bg-red-400 text-red-950'
-                    }`}
+                      }`}
                   >
                     {selectedRequest.status === 'PENDING' ? 'Chờ Duyệt' : selectedRequest.status === 'APPROVED' ? 'Đã Xuất Kho' : 'Từ Chối'}
                   </span>
@@ -342,11 +340,10 @@ export default function ManageRequests() {
                             <td className="p-3 text-center">
                               {!loadingStock && (
                                 <span
-                                  className={`inline-block px-2 py-0.5 text-[11px] font-bold rounded ${
-                                    isStockSufficient
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : 'bg-red-100 text-red-800'
-                                  }`}
+                                  className={`inline-block px-2 py-0.5 text-[11px] font-bold rounded ${isStockSufficient
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-red-100 text-red-800'
+                                    }`}
                                 >
                                   {isStockSufficient ? '✓ Đủ Tồn Kho' : '⚠️ Thiếu Hàng'}
                                 </span>

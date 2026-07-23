@@ -327,7 +327,7 @@ export const inventoryService = {
     return apiClient.get('/requests');
   },
 
-  createDispatchRequest: async (data: {
+  createRequest: async (data: {
     sourceLocationId: number;
     destLocationId: number;
     createdById: number;
@@ -337,6 +337,38 @@ export const inventoryService = {
     if (isMockMode()) {
       const reqs = getFromStorage<MockRequest[]>('mock_requests');
       const products = getFromStorage<MockProduct[]>('mock_products');
+      const inventory = getFromStorage<MockInventory[]>('mock_inventory');
+
+      const sourceLocId = data.sourceLocationId || 1;
+
+      // Validate stock
+      const outOfStockErrors: string[] = [];
+      for (const item of data.items) {
+        const warehouseInv = inventory.find(
+          (i) => i.locationId === sourceLocId && i.productId === item.productId
+        );
+        const availableQty = warehouseInv ? warehouseInv.quantity : 0;
+        const prod = products.find((p) => p.id === item.productId);
+        const prodName = prod?.name || `Sản phẩm #${item.productId}`;
+
+        if (availableQty < item.quantity) {
+          outOfStockErrors.push(
+            `"${prodName}" không đủ hàng (Yêu cầu: ${item.quantity}, Hiện có: ${availableQty})`
+          );
+        }
+      }
+
+      if (outOfStockErrors.length > 0) {
+        return Promise.reject({
+          response: {
+            status: 400,
+            data: {
+              message: 'Thiếu hàng trong kho xuất',
+              validationErrors: outOfStockErrors,
+            },
+          },
+        });
+      }
 
       const newId = reqs.length > 0 ? Math.max(...reqs.map((r) => r.id)) + 1 : 1;
 
@@ -362,10 +394,20 @@ export const inventoryService = {
 
       reqs.push(newRequest);
       saveToStorage('mock_requests', reqs);
-      return { data: { message: 'Dispatch request created (Mock Mode)', request: newRequest } };
+      return { data: { message: 'Request Submitted Successfully', requestId: newId, request: newRequest } };
     }
 
-    return apiClient.post('/requests/dispatch', data);
+    return apiClient.post('/requests/create', data);
+  },
+
+  createDispatchRequest: async (data: {
+    sourceLocationId: number;
+    destLocationId: number;
+    createdById: number;
+    notes?: string;
+    items: Array<{ productId: number; quantity: number }>;
+  }) => {
+    return inventoryService.createRequest(data);
   },
 
   processRequest: async (requestId: number, userId: number) => {
