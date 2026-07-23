@@ -481,8 +481,9 @@ export const inventoryService = {
       // Save inventory
       saveToStorage('mock_inventory', inventory);
 
-      // Update status
+      // Update status & set exported timestamp
       request.status = 'APPROVED';
+      request.updatedAt = new Date().toISOString();
       reqs[reqIndex] = request;
       saveToStorage('mock_requests', reqs);
 
