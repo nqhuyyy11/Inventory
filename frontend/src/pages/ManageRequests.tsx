@@ -235,20 +235,20 @@ export default function ManageRequests() {
       </div>
 
       {/* ========================================================================= */}
-      {/* 📌 BẢNG CHI TIẾT MODAL (DETAIL TABLE MODAL)                              */}
+      {/* 📌 BẢNG CHI TIẾT MODAL (FULL WIDE DETAIL TABLE MODAL)                      */}
       {/* ========================================================================= */}
       {selectedRequest && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col border border-slate-200 animate-in fade-in zoom-in duration-150">
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[95vh] h-[90vh] overflow-hidden flex flex-col border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             {/* Modal Header */}
-            <div className="bg-indigo-600 text-white p-6 flex justify-between items-start">
+            <div className="bg-indigo-600 text-white px-8 py-6 flex justify-between items-center shadow-md">
               <div>
-                <div className="flex items-center gap-3">
-                  <h3 className="text-xl font-black">
-                    Bảng Chi Tiết Đơn Yêu Cầu #REQ-{String(selectedRequest.id).padStart(4, '0')}
+                <div className="flex items-center gap-4">
+                  <h3 className="text-2xl font-black tracking-tight">
+                    BẢNG CHI TIẾT ĐƠN YÊU CẦU #REQ-{String(selectedRequest.id).padStart(4, '0')}
                   </h3>
                   <span
-                    className={`px-3 py-0.5 text-xs font-black rounded-full uppercase tracking-wider ${
+                    className={`px-4 py-1 text-xs font-black rounded-full uppercase tracking-wider ${
                       selectedRequest.status === 'PENDING'
                         ? 'bg-amber-400 text-amber-950'
                         : selectedRequest.status === 'APPROVED'
@@ -259,13 +259,14 @@ export default function ManageRequests() {
                     {selectedRequest.status === 'PENDING' ? 'Chờ Duyệt' : selectedRequest.status === 'APPROVED' ? 'Đã Xuất Kho' : 'Từ Chối'}
                   </span>
                 </div>
-                <p className="text-xs text-indigo-100 mt-1">
-                  Ngày khởi tạo: {new Date(selectedRequest.createdAt).toLocaleString('vi-VN')} | Người gửi: {selectedRequest.createdBy?.fullName || 'Store Manager'}
+                <p className="text-xs text-indigo-100 mt-1 font-medium">
+                  Thời gian tạo: {new Date(selectedRequest.createdAt).toLocaleString('vi-VN')} | Người yêu cầu: {selectedRequest.createdBy?.fullName || 'Store Manager'}
                 </p>
               </div>
               <button
                 onClick={handleCloseDetail}
-                className="text-indigo-200 hover:text-white text-2xl font-bold p-1 leading-none"
+                className="text-indigo-200 hover:text-white text-3xl font-bold p-1 leading-none transition"
+                title="Đóng cửa sổ"
               >
                 ✕
               </button>
